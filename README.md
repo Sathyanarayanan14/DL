@@ -338,5 +338,3 @@ print(f'\nNew Email: "{new_email}"\nPredicted Category: {predicted_label}')
 ```
 
 ---
-
-Would you like me to **extract and save** all these 9 programs as a **single `.py` file** (clean and formatted)?
