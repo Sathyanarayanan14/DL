@@ -1,243 +1,342 @@
-1.XOR 
-import numpy as np
+### **1. Developing a Predictive Model for Automation Tasks**
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+```python
+import pandas as pd 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split 
+import smtplib 
+from email.mime.text import MIMEText 
+from email.mime.multipart import MIMEMultipart  
 
-def sigmoid_derivative(x):
-    return x * (1 - x)
+data = { 
+    'age': [22, 35, 58, 45, 25, 33, 52, 40, 60, 48],
+    'browsing_time': [5, 10, 2, 8, 7, 12, 1, 4, 3, 9],
+    'previous_purchases': [0, 3, 1, 5, 0, 2, 0, 1, 0, 4],
+    'made_purchase': [0, 1, 0, 1, 0, 1, 1, 1, 1, 1]
+} 
 
-X = np.array([[0,0], [0,1], [1,0], [1,1]])
-y = np.array([[0], [1], [1], [0]])
+df = pd.DataFrame(data)
+X = df[['age', 'browsing_time', 'previous_purchases']]
+y = df['made_purchase']
 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
 
-input_layer_neurons = 2
-hidden_layer_neurons = 2
-output_neurons = 1
-learning_rate = 0.1
-epochs = 10000
+new_customer = {'age': 35, 'browsing_time': 10, 'previous_purchases': 3, 'email': 'xxxx@gmail.com'}
+new_df = pd.DataFrame([new_customer])  
+prediction = model.predict(new_df[['age', 'browsing_time', 'previous_purchases']])
+print("Prediction for new customer:", prediction[0])
 
+if prediction[0] == 1: 
+    sender_email = "yyyy@gmail.com" 
+    sender_password = "hhprrnmnugkrihcf"
+    receiver_email = new_customer['email'] 
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message["Subject"] = "Special Offer Just for You!"
+    body = """
+    Hi there,
+    We noticed you're interested in our products. Here's a special offer just for you!
+    Best regards,
+    Your Company
+    """ 
+    message.attach(MIMEText(body, "plain"))
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+        print("Email sent successfully to", receiver_email)
+    except Exception as e:
+        print("Failed to send email:", e)
+    finally:
+        server.quit()
+else:
+    print("Customer unlikely to purchase — no email sent.")
+```
 
-np.random.seed(42)
-wh = np.random.uniform(size=(input_layer_neurons, hidden_layer_neurons))
-bh = np.random.uniform(size=(1, hidden_layer_neurons))
-wo = np.random.uniform(size=(hidden_layer_neurons, output_neurons))
-bo = np.random.uniform(size=(1, output_neurons))
+---
 
+### **2. Weather Data Collection and Analysis**
 
-for epoch in range(epochs):
-    
-    hidden_input = np.dot(X, wh) + bh
-    hidden_output = sigmoid(hidden_input)
+```python
+import requests
 
-    final_input = np.dot(hidden_output, wo) + bo
-    predicted_output = sigmoid(final_input)
+def get_weather(city):
+    url = f"https://wttr.in/{city}?format=3"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            print(f"Current weather in {city}: {response.text}")
+        else:
+            print("Failed to get weather info")
+    except Exception as e:
+        print("Error:", e)
 
-    error = y - predicted_output
-    d_predicted_output = error * sigmoid_derivative(predicted_output)
+if __name__ == "__main__":
+    city = "Chennai"
+    print(f"--- Weather Information for {city} ---")
+    get_weather(city)
+```
 
-    error_hidden_layer = d_predicted_output.dot(wo.T)
-    d_hidden_layer = error_hidden_layer * sigmoid_derivative(hidden_output)
+---
 
-    wo += hidden_output.T.dot(d_predicted_output) * learning_rate
-    bo += np.sum(d_predicted_output, axis=0, keepdims=True) * learning_rate
-    wh += X.T.dot(d_hidden_layer) * learning_rate
-    bh += np.sum(d_hidden_layer, axis=0, keepdims=True) * learning_rate
+### **3. Automated Data Preprocessing Techniques**
 
-print("Final output after training:")
-print(np.round(predicted_output, 3))
+```python
+import pandas as pd
 
-2.CNN Image Classification 
+df = pd.read_excel("C:/Users/User/Desktop/bike.xlxs")
+print("Original Data:")
+print(df.head())
 
-import tensorflow as tf
-from tensorflow.keras import layers, models
-import matplotlib.pyplot as plt
-import numpy as np
+df = df.drop_duplicates()
+for col in df.select_dtypes(include=['object']).columns:
+    df[col] = df[col].str.strip().str.lower()
 
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
-x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
+df['age'] = df['age'].fillna(df['age'].mean())
+df['date'] = pd.to_datetime(df['date'], errors='coerce')
+df = df.dropna(subset=['date'])
 
-model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(64, activation='relu'),
-    layers.Dense(10, activation='softmax')
-])
+print("\nCleaned Data:")
+print(df.head())
 
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
+df.to_csv("data_cleaned.csv", index=False)
+```
 
-model.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test))
-test_loss, test_acc = model.evaluate(x_test, y_test)
-print(f'\nTest accuracy: {test_acc:.3f}')
+---
 
-predictions = model.predict(x_test)
+### **4. Process Automation Strategies**
 
-def plot_images(images, true_labels, pred_probs, start_idx=0, num=10):
-    plt.figure(figsize=(12, 6))
-    for i in range(num):
-        idx = start_idx + i
-        plt.subplot(2, 5, i+1)
-        plt.imshow(images[idx].reshape(28,28), cmap='gray')
-        true_label = true_labels[idx]
-        pred_label = np.argmax(pred_probs[idx])
-        color = 'green' if pred_label == true_label else 'red'
-        plt.title(f'True: {true_label}\nPred: {pred_label}', color=color)
-        plt.axis('off')
-    plt.show()
+```python
+import pandas as pd
+import smtplib
+from email.mime.text import MIMEText
 
-plot_images(x_test, y_test, predictions, start_idx=0, num=10)
+data = pd.read_excel("/content/drive/MyDrive/employee.xlsx")
+Absent = data[data['Status'] == 'Absent']
 
+sender_email = "integratedaidnnn@gmail.com"
+password = "hhprrnmnugkrihcf"
 
-3.Sentiment Analysis 
+server = smtplib.SMTP("smtp.gmail.com", 587)
+server.starttls()
+server.login(sender_email, password)
 
-import tensorflow as tf
-import tensorflow_datasets as tfds
-import numpy as np
-import matplotlib.pyplot as plt
+for _, row in Absent.iterrows():
+    name = row['Name']
+    recipient = row['Email']
+    msg = MIMEText("ABSENT")
+    msg['Subject'] = "Absent Message"
+    msg['From'] = sender_email
+    msg['To'] = recipient
+    server.sendmail(sender_email, recipient, msg.as_string())
+    print(f"Email sent to {name}")
 
-dataset = tfds.load('imdb_reviews', as_supervised=True)
-train_dataset, test_dataset = dataset['train'], dataset['test']
-batch_size = 32
-train_dataset = train_dataset.shuffle(10000).batch(batch_size)
-test_dataset = test_dataset.batch(batch_size)
-vectorize_layer = tf.keras.layers.TextVectorization(output_mode='int', output_sequence_length=100)
-vectorize_layer.adapt(train_dataset.map(lambda x, y: x))
-model = tf.keras.Sequential([
- vectorize_layer,
- tf.keras.layers.Embedding(len(vectorize_layer.get_vocabulary()), 64, mask_zero=True),
- tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, return_sequences=True)),
- tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32)),
- tf.keras.layers.Dense(64, activation='relu'),
- tf.keras.layers.Dense(1)
-])
-model.build(input_shape=(None,))
-model.compile(
- loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
- optimizer=tf.keras.optimizers.Adam(),
- metrics=['accuracy']
-)
-model.fit(train_dataset, epochs=3, validation_data=test_dataset)
+server.quit()
+print("Automation completed!")
+```
 
+---
 
-4.Data Augmentation 
+### **5. Introduction to Web Scraping Methods**
 
-import tensorflow as tf
-from tensorflow.keras import layers
-import matplotlib.pyplot as plt
+```python
+import requests
+from bs4 import BeautifulSoup
 
-data_augmentation = tf.keras.Sequential([
- layers.RandomFlip("horizontal_and_vertical"),
- layers.RandomRotation(0.2),
- layers.RandomZoom(height_factor=0.2, width_factor=0.2),
- layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
- layers.RandomContrast(0.2),
- layers.RandomBrightness(0.2),
- layers.GaussianNoise(0.05),
- layers.RandomCrop(height=200, width=200),
- layers.Rescaling(1./255)
-])
-img_raw = tf.io.read_file('/content/drive/MyDrive/Kamesh_HT.jpeg')
-img = tf.image.decode_jpeg(img_raw, channels=3)
-img = tf.image.resize(img, [224, 224])
-img = tf.expand_dims(img, 0)
-plt.figure(figsize=(15,5))
-for i in range(5):
-    augmented_img = data_augmentation(img)
-    plt.subplot(1,5,i+1)
-    plt.imshow(tf.cast(augmented_img[0]*255, tf.uint8))
-    plt.axis('off')
-    plt.title(f"Augmented {i+1}")
-plt.show()
+url = "https://news.ycombinator.com/"
+headers = {"User-Agent": "Mozilla/5.0"}
+response = requests.get(url, headers=headers)
 
+if response.status_code == 200:
+    soup = BeautifulSoup(response.text, "html.parser")
+    title_spans = soup.find_all("span", class_="titleline")
+    print("Top Headlines:")
+    for i, span in enumerate(title_spans[:5], start=1):
+        link = span.find("a")
+        print(f"{i}. {link.text}")
+else:
+    print("Failed to fetch page. Status code:", response.status_code)
+```
 
+---
 
-5.iris dataset
+### **6. Advanced Web Scraping Techniques**
 
-import tensorflow as tf
-from tensorflow import keras
-from sklearn.datasets import load_iris
+```python
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://books.toscrape.com/catalogue/category/books_1/index.html"
+headers = {"User-Agent": "Mozilla/5.0"}
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    soup = BeautifulSoup(response.text, "html.parser")
+    books = soup.find_all("h3")
+    prices = soup.find_all("p", class_="price_color")
+
+    for i, (book, price) in enumerate(zip(books, prices), start=1):
+        print(f"{i}. {book.a['title']} – {price.text}")
+else:
+    print(f"Failed to fetch page. Status code: {response.status_code}")
+```
+
+---
+
+### **7. Robotic Process Automation (RPA)**
+
+```python
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+all_books = []
+
+for page in range(1, 51):
+    url = f"https://books.toscrape.com/catalogue/page-{page}.html"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        print(f"Failed to fetch page {page}. Status code: {response.status_code}")
+        break
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    books = soup.find_all("h3")
+    prices = soup.find_all("p", class_="price_color")
+
+    for book, price in zip(books, prices):
+        all_books.append({
+            "Title": book.a['title'],
+            "Price": price.text
+        })
+
+df = pd.DataFrame(all_books)
+df.to_csv("books_data.csv", index=False, encoding='utf-8')
+print("Scraping complete!")
+print(f"Total books collected: {len(df)}")
+print(df.head())
+```
+
+---
+
+### **8 (A & B). Python Libraries for Automation**
+
+#### **A. Scheduling Tasks Using the Schedule Library**
+
+```python
+import schedule
+import time
+
+def job():
+    print("Reminder: Take a short break and stretch!")
+
+schedule.every(5).seconds.do(job)
+print("Scheduler started. Press Ctrl+C to stop.")
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
+```
+
+#### **B. Automated Invoice Generation**
+
+```python
+from fpdf import FPDF
+
+purchase_items = [
+    {"item": "Rice Bag", "qty": 2, "price": 1200},
+    {"item": "Sugar", "qty": 5, "price": 45},
+    {"item": "Oil Tin", "qty": 1, "price": 1500},
+    {"item": "Milk Packet", "qty": 10, "price": 25},
+]
+
+def generate_invoice(invoice_no, customer_name, purchases):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, txt="INVOICE", ln=True, align="C")
+
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Invoice No: {invoice_no}", ln=True)
+    pdf.cell(200, 10, txt=f"Customer: {customer_name}", ln=True)
+    pdf.ln(10)
+
+    pdf.cell(80, 10, "Item", 1)
+    pdf.cell(30, 10, "Qty", 1)
+    pdf.cell(40, 10, "Price", 1)
+    pdf.cell(40, 10, "Amount", 1, ln=True)
+
+    total = 0
+    for p in purchases:
+        amount = p["qty"] * p["price"]
+        total += amount
+        pdf.cell(80, 10, p["item"], 1)
+        pdf.cell(30, 10, str(p["qty"]), 1)
+        pdf.cell(40, 10, f"{p['price']}", 1)
+        pdf.cell(40, 10, f"{amount}", 1, ln=True)
+
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(150, 10, "TOTAL", 1)
+    pdf.cell(40, 10, f"{total}", 1, ln=True)
+
+    filename = f"Invoice_{invoice_no}.pdf"
+    pdf.output(filename)
+    print(f"Invoice saved as {filename}")
+```
+
+---
+
+### **9. Cognitive Automation with NLP: Email Classification Applications**
+
+```python
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import classification_report
 
-iris = load_iris()
-X = iris.data
-y = iris.target
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
-y_train = to_categorical(y_train)
-y_test = to_categorical(y_test)
-model = keras.Sequential([
- keras.layers.Dense(10, activation='relu', input_shape=(X_train.shape[1],)),
- keras.layers.Dense(10, activation='relu'),
- keras.layers.Dense(3, activation='softmax')
-])
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(X_train, y_train, epochs=50, batch_size=5, validation_split=0.1)
-loss, accuracy = model.evaluate(X_test, y_test)
-print(f"Test Loss: {loss:.4f}")
-print(f"Test Accuracy: {accuracy:.4f}")
+data = {
+    'email': [
+        'I want a refund, the product is defective',
+        'Your service is excellent, thank you!',
+        'Where is my order? It’s late again!',
+        'Please cancel my subscription immediately',
+        'This is spam. Stop sending these emails!',
+        'I need help with my account login issue',
+        'Thanks for the quick response, great support',
+        'You guys are scammers, I lost my money!',
+        'My package was damaged during delivery',
+        'Congratulations! You won a free iPhone!'
+    ],
+    'label': [
+        'complaint', 'praise', 'complaint', 'support_request',
+        'spam', 'support_request', 'praise', 'complaint',
+        'complaint', 'spam'
+    ]
+}
 
+df = pd.DataFrame(data)
+X_train, X_test, y_train, y_test = train_test_split(df['email'], df['label'], test_size=0.3, random_state=42)
+model = make_pipeline(TfidfVectorizer(), MultinomialNB())
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
 
-6. Implementation of Confusion Matrix for Multi-Class Classification
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
 
+new_email = "Why did you charge me twice for the same item?"
+predicted_label = model.predict([new_email])[0]
+print(f'\nNew Email: "{new_email}"\nPredicted Category: {predicted_label}')
+```
 
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from tensorflow.keras.datasets import mnist
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten
-from tensorflow.keras.utils import to_categorical
+---
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-x_train = x_train / 255.0
-x_test = x_test / 255.0
-y_train_cat = to_categorical(y_train, num_classes=10)
-y_test_cat = to_categorical(y_test, num_classes=10)
-model = Sequential([
-    Flatten(input_shape=(28,28)),
-    Dense(128, activation='relu'),
-    Dense(64, activation='relu'),
-    Dense(10, activation='softmax')
-])
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(x_train, y_train_cat, epochs=5, batch_size=32, validation_split=0.1)
-y_pred_prob = model.predict(x_test)
-y_pred = np.argmax(y_pred_prob, axis=1)
-cm = confusion_matrix(y_test, y_pred)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels
-
-
-
-7.Neural Network architecture 
-
-
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Flatten, Dense, Conv2D, MaxPooling2D
-from tensorflow.keras.utils import to_categorical
-
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
-y_train = to_categorical(y_train, 10)
-y_test = to_categorical(y_test, 10)
-model = Sequential([
- Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)),
- MaxPooling2D((2,2)),
- Conv2D(64, (3,3), activation='relu'),
- MaxPooling2D((2,2)),
- Flatten(),
- Dense(128, activation='relu'),
- Dense(10, activation='softmax')
-])
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(x_train, y_train, epochs=10, batch_size=64, validation_split=0.1)
-test_loss, test_acc = model.evaluate(x_test, y_test)
-print("Test Accuracy:", test_acc)
+Would you like me to **extract and save** all these 9 programs as a **single `.py` file** (clean and formatted)?
